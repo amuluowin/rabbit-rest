@@ -21,8 +21,6 @@ trait RestTrait
 {
     /** @var CacheInterface */
     protected $cache;
-    /** @var string */
-    protected $cacheHeader = 'Cache';
     /** @var callable */
     protected $cacheCallback;
 
