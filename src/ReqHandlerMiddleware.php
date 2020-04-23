@@ -16,6 +16,8 @@ use rabbit\server\AttributeEnum;
  */
 class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
 {
+    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search'];
+
     /**
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
@@ -33,7 +35,7 @@ class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
             throw new NotFoundException("The route type error:" . $request->getUri()->getPath());
         }
 
-        if ($len === 4 && in_array(strtolower(end($route)), ['create', 'update', 'view', 'list', 'search'])) {
+        if ($len === 4 && in_array(strtolower(end($route)), $this->crudMethods)) {
             list(, $module, $model, $handler) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($model) . "Crud";
         } else {

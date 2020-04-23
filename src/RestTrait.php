@@ -7,6 +7,8 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Http\Message\ServerRequestInterface;
 use rabbit\db\mysql\CreateExt;
+use rabbit\db\mysql\DeleteExt;
+use rabbit\db\mysql\Orm;
 use rabbit\db\mysql\UpdateExt;
 use rabbit\helper\ArrayHelper;
 
@@ -47,7 +49,19 @@ trait RestTrait
     {
         $model = new $this->modelClass();
         return $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return UpdateExt::update($model, $body);
+            return UpdateExt::update($model, $body, true);
+        });
+    }
+
+    /**
+     * @param array $body
+     * @return mixed
+     */
+    protected function delete(array $body)
+    {
+        $model = new $this->modelClass();
+        return $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+            return DeleteExt::delete($model, $body, true);
         });
     }
 
@@ -60,7 +74,7 @@ trait RestTrait
     protected function list(array $filter): array
     {
         $filter = ArrayHelper::getValueByArray($filter, [0, 1], null, ['*', []]);
-        return Search::run($this->modelClass::getDb(), $this->modelClass::tableName(), $filter);
+        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter);
     }
 
     /**
@@ -72,7 +86,7 @@ trait RestTrait
     protected function view(array $filter): array
     {
         $filter = ArrayHelper::getValueByArray($filter, [0, 1], null, ['*', []]);
-        return Search::run($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, 'queryOne');
+        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, 'queryOne');
     }
 
     /**
@@ -85,6 +99,6 @@ trait RestTrait
     {
         $method = ArrayHelper::remove($filter, 'method', 'queryAll');
         $filter = ArrayHelper::getValueByArray($filter['query'], [0, 1], null, ['*', []]);
-        return Search::run($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, $method);
+        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, $method);
     }
 }
