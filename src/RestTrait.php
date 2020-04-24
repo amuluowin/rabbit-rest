@@ -89,7 +89,8 @@ trait RestTrait
      */
     protected function list(array $filter, ServerRequestInterface $request = null): array
     {
-        return DBHelper::Search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
+        $alias = $this->buildFilter($filter);
+        return DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
     }
 
     /**
@@ -101,8 +102,9 @@ trait RestTrait
      */
     protected function index(array $filter, ServerRequestInterface $request = null): array
     {
+        $alias = $this->buildFilter($filter);
         $page = ArrayHelper::remove($filter, 'page', 0);
-        return DBHelper::SearchList($this->modelClass::find()->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
+        return DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
     }
 
     /**
@@ -114,7 +116,8 @@ trait RestTrait
      */
     protected function view(array $filter, ServerRequestInterface $request = null): array
     {
-        return DBHelper::search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
+        $alias = $this->buildFilter($filter);
+        return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
     }
 
     /**
@@ -126,8 +129,26 @@ trait RestTrait
      */
     protected function search(array $filter, ServerRequestInterface $request = null)
     {
+        $alias = $this->buildFilter($filter);
         $method = ArrayHelper::remove($filter, 'method', 'all');
-        return DBHelper::search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+        return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+    }
+
+    /**
+     * @param array $filter
+     */
+    private function buildFilter(array &$filter): string
+    {
+        $alias = explode('\\', get_class());
+        $alias = str_replace('crud', '', strtolower(end($alias)));
+        $select = ArrayHelper::remove($filter, 'select', '*');
+        if (is_string($select) && $select === '*') {
+            $select = $alias . '.' . $select;
+        } elseif (is_array($select) && $select === ['*']) {
+            $select = [$alias . '.' . current($select)];
+        }
+        $filter['select'] = $select;
+        return $alias;
     }
 
     /**
