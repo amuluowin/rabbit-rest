@@ -16,7 +16,7 @@ use rabbit\server\AttributeEnum;
  */
 class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
 {
-    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search'];
+    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
 
     /**
      * @param ServerRequestInterface $request

@@ -7,9 +7,9 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\CacheInterface;
+use rabbit\db\DBHelper;
 use rabbit\db\mysql\CreateExt;
 use rabbit\db\mysql\DeleteExt;
-use rabbit\db\mysql\Orm;
 use rabbit\db\mysql\UpdateExt;
 use rabbit\helper\ArrayHelper;
 
@@ -23,6 +23,12 @@ trait RestTrait
     protected $cache;
     /** @var callable */
     protected $cacheCallback;
+
+    static $joinMap = [
+        'lj' => '[<]',
+        'rj' => '[>]',
+        'fj' => '[<>]'
+    ];
 
     /**
      * @param array $params
@@ -83,12 +89,20 @@ trait RestTrait
      */
     protected function list(array $filter, ServerRequestInterface $request = null): array
     {
-        $filter = ArrayHelper::getValueByArray($filter, [0, 1], null, ['*', []]);
-        $duration = -1;
-        if (is_callable($this->cacheCallback)) {
-            $duration = call_user_func($this->cacheCallback, $request);
-        }
-        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, 'queryAll', $duration === '' ? -1 : (int)$duration, $this->cache);
+        return DBHelper::Search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
+    }
+
+    /**
+     * @param array $filter
+     * @param ServerRequestInterface|null $request
+     * @return array
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
+    protected function index(array $filter, ServerRequestInterface $request = null): array
+    {
+        $page = ArrayHelper::remove($filter, 'page', 0);
+        return DBHelper::SearchList($this->modelClass::find()->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
     }
 
     /**
@@ -100,12 +114,7 @@ trait RestTrait
      */
     protected function view(array $filter, ServerRequestInterface $request = null): array
     {
-        $filter = ArrayHelper::getValueByArray($filter, [0, 1], null, ['*', []]);
-        $duration = -1;
-        if (is_callable($this->cacheCallback)) {
-            $duration = call_user_func($this->cacheCallback, $request);
-        }
-        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, 'queryOne', $duration === '' ? -1 : (int)$duration, $this->cache);
+        return DBHelper::search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
     }
 
     /**
@@ -117,12 +126,20 @@ trait RestTrait
      */
     protected function search(array $filter, ServerRequestInterface $request = null)
     {
-        $method = ArrayHelper::remove($filter, 'method', 'queryAll');
-        $filter = ArrayHelper::getValueByArray($filter['query'], [0, 1], null, ['*', []]);
+        $method = ArrayHelper::remove($filter, 'method', 'all');
+        return DBHelper::search($this->modelClass::find()->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+    }
+
+    /**
+     * @param ServerRequestInterface $request
+     * @return int
+     */
+    private function getDuration(ServerRequestInterface $request): int
+    {
         $duration = -1;
         if (is_callable($this->cacheCallback)) {
             $duration = call_user_func($this->cacheCallback, $request);
         }
-        return Orm::search($this->modelClass::getDb(), $this->modelClass::tableName(), $filter, $method, $duration === '' ? -1 : (int)$duration, $this->cache);
+        return $duration === '' ? -1 : (int)$duration;
     }
 }
