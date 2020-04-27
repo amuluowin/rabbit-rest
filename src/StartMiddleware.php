@@ -37,7 +37,7 @@ class StartMiddleware implements MiddlewareInterface
         // Content
         $data = [
             'code' => 0,
-            'message' => 'success',
+            'msg' => 'success',
             'result' => $result
         ];
         $data = ArrayHelper::toArray($data);
