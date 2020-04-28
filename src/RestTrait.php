@@ -8,6 +8,7 @@ use DI\NotFoundException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\CacheInterface;
 use rabbit\db\DBHelper;
+use rabbit\db\Exception;
 use rabbit\db\mysql\CreateExt;
 use rabbit\db\mysql\DeleteExt;
 use rabbit\db\mysql\UpdateExt;
@@ -49,9 +50,13 @@ trait RestTrait
     protected function create(array $body, ServerRequestInterface $request = null): array
     {
         $model = new $this->modelClass();
-        return $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return CreateExt::create($model, $body);
         });
+        if ($res === [0]) {
+            throw new Exception("Failed to create the object for unknown reason.");
+        }
+        return $res;
     }
 
     /**
@@ -62,9 +67,13 @@ trait RestTrait
     protected function update(array $body, ServerRequestInterface $request = null): array
     {
         $model = new $this->modelClass();
-        return $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return UpdateExt::update($model, $body, true);
         });
+        if ($res === [0]) {
+            throw new Exception("Failed to update the object for unknown reason.");
+        }
+        return $res;
     }
 
     /**
@@ -75,9 +84,13 @@ trait RestTrait
     protected function delete(array $body, ServerRequestInterface $request = null)
     {
         $model = new $this->modelClass();
-        return $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return DeleteExt::delete($model, $body, true);
         });
+        if ($res === [0]) {
+            throw new Exception("Failed to delete the object for unknown reason.");
+        }
+        return $res;
     }
 
     /**
