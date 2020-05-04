@@ -13,6 +13,7 @@ use rabbit\db\mysql\CreateExt;
 use rabbit\db\mysql\DeleteExt;
 use rabbit\db\mysql\UpdateExt;
 use rabbit\helper\ArrayHelper;
+use rabbit\web\NotFoundHttpException;
 
 /**
  * Trait RestTrait
@@ -31,14 +32,20 @@ trait RestTrait
         'fj' => '[<>]'
     ];
 
+    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
+
     /**
      * @param array $params
      * @param ServerRequestInterface|null $request
      * @param string $method
      * @return mixed
+     * @throws NotFoundHttpException
      */
     public function __invoke(array $params = [], ServerRequestInterface $request = null, string $method = '')
     {
+        if (!in_array($method, $this->crudMethods)) {
+            throw new NotFoundHttpException("Can not find the route:" . $request->getUri()->getPath());
+        }
         return $this->$method($params, $request);
     }
 
