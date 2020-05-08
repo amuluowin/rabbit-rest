@@ -17,6 +17,17 @@ use rabbit\server\AttributeEnum;
 class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
 {
     protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
+    /** @var string */
+    protected $prefix = '';
+
+    /**
+     * ReqHandlerMiddleware constructor.
+     * @param string $prefix
+     */
+    public function __construct(string $prefix = '')
+    {
+        $this->prefix = $prefix;
+    }
 
     /**
      * @param ServerRequestInterface $request
@@ -28,6 +39,7 @@ class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
     {
         // 获取访问接口地址
         $url = $request->getUri()->getPath();
+        $url = str_replace($this->prefix, '', $url);
         // 解析路由
         $route = explode('/', ltrim($url, '/'));
         $len = count($route);
