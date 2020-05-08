@@ -31,15 +31,15 @@ class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
         // 解析路由
         $route = explode('/', ltrim($url, '/'));
         $len = count($route);
-        if (!in_array($len, [3, 4]) || $route[0] !== 'api') {
+        if (!in_array($len, [2, 3])) {
             throw new NotFoundException("The route type error:" . $request->getUri()->getPath());
         }
 
-        if ($len === 4 && in_array(strtolower(end($route)), $this->crudMethods)) {
-            list(, $module, $model, $handler) = $route;
+        if ($len === 3 && in_array(strtolower(end($route)), $this->crudMethods)) {
+            list($module, $model, $handler) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($model) . "Crud";
         } else {
-            list(, $module, $handler) = $route;
+            list($module, $handler) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($handler);
         }
 
