@@ -33,6 +33,8 @@ trait RestTrait
     ];
 
     protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
+    /** @var string */
+    protected $queryKey;
 
     /**
      * @param array $params
@@ -136,7 +138,20 @@ trait RestTrait
      */
     protected function view(array $filter, ServerRequestInterface $request = null): array
     {
+        $id = ArrayHelper::getValue($filter, 'id');
         $alias = $this->buildFilter($filter);
+        $keys = $this->modelClass::primaryKey();
+        foreach ($keys as $index => $key) {
+            $keys[$index] = $alias . '.' . $key;
+        }
+        if (count($keys) > 1 && $id !== null) {
+            $values = explode(',', $id);
+            if (count($keys) === count($values)) {
+                return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->andWhere(array_combine($keys, $values))->cache($this->getDuration($request), $this->cache)->one();
+            }
+        } elseif ($id !== null) {
+            return $model = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->andWhere(array_combine($keys, [$id]))->cache($this->getDuration($request), $this->cache)->one();
+        }
         return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
     }
 
@@ -161,6 +176,7 @@ trait RestTrait
     {
         $alias = explode('\\', get_class());
         $alias = str_replace('crud', '', strtolower(end($alias)));
+        $this->queryKey && $filter = ArrayHelper::remove($filter, $this->queryKey, []);
         $select = ArrayHelper::remove($filter, 'select', '*');
         if (is_string($select) && $select === '*') {
             $select = $alias . '.' . $select;
