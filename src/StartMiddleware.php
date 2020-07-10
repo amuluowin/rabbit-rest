@@ -3,18 +3,17 @@ declare(strict_types=1);
 
 namespace Rabbit\Rest;
 
+use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use rabbit\helper\ArrayHelper;
-use rabbit\helper\JsonHelper;
-use rabbit\server\AttributeEnum;
+use Rabbit\Base\Helper\ArrayHelper;
+use Rabbit\Base\Helper\JsonHelper;
 
 /**
  * Class StartMiddleware
- *
- * @package common
+ * @package Rabbit\Rest
  */
 class StartMiddleware implements MiddlewareInterface
 {
@@ -25,7 +24,7 @@ class StartMiddleware implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws \Exception
+     * @throws Exception
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {

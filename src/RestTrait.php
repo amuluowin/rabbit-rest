@@ -3,17 +3,15 @@ declare(strict_types=1);
 
 namespace Rabbit\Rest;
 
-use DI\DependencyException;
-use DI\NotFoundException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\SimpleCache\CacheInterface;
-use rabbit\db\DBHelper;
-use rabbit\db\Exception;
-use rabbit\db\mysql\CreateExt;
-use rabbit\db\mysql\DeleteExt;
-use rabbit\db\mysql\UpdateExt;
-use rabbit\helper\ArrayHelper;
-use rabbit\web\NotFoundHttpException;
+use Psr\SimpleCache\InvalidArgumentException;
+use Rabbit\ActiveRecord\ARHelper;
+use Rabbit\Base\Core\Exception;
+use Rabbit\Base\Helper\ArrayHelper;
+use Rabbit\DB\DBHelper;
+use Rabbit\Web\NotFoundHttpException;
+use Throwable;
 
 /**
  * Trait RestTrait
@@ -22,19 +20,21 @@ use rabbit\web\NotFoundHttpException;
 trait RestTrait
 {
     /** @var CacheInterface */
-    protected $cache;
+    protected ?CacheInterface $cache = null;
     /** @var callable */
     protected $cacheCallback;
+    /** @var string  */
+    protected string $ARClass = ARHelper::class;
 
-    static $joinMap = [
+    public static array $joinMap = [
         'lj' => '[<]',
         'rj' => '[>]',
         'fj' => '[<>]'
     ];
 
-    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
+    protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     /** @var string */
-    protected $queryKey;
+    protected string $queryKey;
 
     /**
      * @param array $params
@@ -55,12 +55,13 @@ trait RestTrait
      * @param array $body
      * @param ServerRequestInterface|null $request
      * @return array
+     * @throws Exception
      */
     protected function create(array $body, ServerRequestInterface $request = null): array
     {
         $model = new $this->modelClass();
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return CreateExt::create($model, $body);
+            return $this->ARClass::create($model, $body);
         });
         if ($res === [0]) {
             throw new Exception("Failed to create the object for unknown reason.");
@@ -72,12 +73,13 @@ trait RestTrait
      * @param array $body
      * @param ServerRequestInterface|null $request
      * @return array
+     * @throws Exception
      */
     protected function update(array $body, ServerRequestInterface $request = null): array
     {
         $model = new $this->modelClass();
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return UpdateExt::update($model, $body, true);
+            return $this->ARClass::update($model, $body, true);
         });
         if ($res === [0]) {
             throw new Exception("Failed to update the object for unknown reason.");
@@ -89,12 +91,13 @@ trait RestTrait
      * @param array $body
      * @param ServerRequestInterface|null $request
      * @return mixed
+     * @throws Exception
      */
     protected function delete(array $body, ServerRequestInterface $request = null)
     {
         $model = new $this->modelClass();
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return DeleteExt::delete($model, $body, true);
+            return $this->ARClass::delete($model, $body, true);
         });
         if ($res === [0]) {
             throw new Exception("Failed to delete the object for unknown reason.");
@@ -106,8 +109,8 @@ trait RestTrait
      * @param array $filter
      * @param ServerRequestInterface|null $request
      * @return array
-     * @throws DependencyException
-     * @throws NotFoundException
+     * @throws InvalidArgumentException
+     * @throws Throwable
      */
     protected function list(array $filter, ServerRequestInterface $request = null): array
     {
@@ -119,8 +122,6 @@ trait RestTrait
      * @param array $filter
      * @param ServerRequestInterface|null $request
      * @return array
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     protected function index(array $filter, ServerRequestInterface $request = null): array
     {
@@ -133,8 +134,8 @@ trait RestTrait
      * @param array $filter
      * @param ServerRequestInterface|null $request
      * @return array
-     * @throws DependencyException
-     * @throws NotFoundException
+     * @throws InvalidArgumentException
+     * @throws Throwable
      */
     protected function view(array $filter, ServerRequestInterface $request = null): array
     {
@@ -161,8 +162,6 @@ trait RestTrait
      * @param array $filter
      * @param ServerRequestInterface|null $request
      * @return mixed
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     protected function search(array $filter, ServerRequestInterface $request = null)
     {
@@ -173,6 +172,7 @@ trait RestTrait
 
     /**
      * @param array $filter
+     * @return string
      */
     private function buildFilter(array &$filter): string
     {

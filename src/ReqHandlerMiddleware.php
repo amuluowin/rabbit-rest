@@ -2,23 +2,24 @@
 
 namespace Rabbit\Rest;
 
-use common\Exception\NotFoundException;
-use common\RequestHandlers\SingletonInterface;
+use DI\NotFoundException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use rabbit\core\Context;
-use rabbit\server\AttributeEnum;
+use Rabbit\Base\Core\Context;
+use Rabbit\Web\AttributeEnum;
+use Throwable;
 
 /**
  * Class ReqHandlerMiddleware
  * @package Rabbit\Rest
  */
-class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
+class ReqHandlerMiddleware implements MiddlewareInterface
 {
-    protected $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
+    protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     /** @var string */
-    protected $prefix = '';
+    protected string $prefix = '';
 
     /**
      * ReqHandlerMiddleware constructor.
@@ -33,7 +34,7 @@ class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotFoundException
+     * @throws Throwable
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -64,17 +65,11 @@ class ReqHandlerMiddleware extends \rabbit\auth\middleware\ReqHandlerMiddleware
             throw $error;
         }
 
-        if (!$class instanceof SingletonInterface) {
-            $invoker = clone $class;
-        } else {
-            $invoker = $class;
-        }
-
         // 把GET和POST中的参数主体合并，POST的覆盖GET的
         $params = $request->getParsedBody() + $request->getQueryParams();
 
         /* @var ResponseInterface $response */
-        $response = $invoker($params, $request, $handler);
+        $response = $class($params, $request, $handler);
         if (!$response instanceof ResponseInterface) {
             /* @var ResponseInterface $newResponse */
             $newResponse = Context::get('response');
