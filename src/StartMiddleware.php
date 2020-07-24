@@ -10,6 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\Base\Helper\JsonHelper;
+use Rabbit\Web\AttributeEnum;
 
 /**
  * Class StartMiddleware
