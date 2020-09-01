@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Rabbit\Rest;
@@ -10,7 +11,7 @@ use Rabbit\ActiveRecord\ARHelper;
 use Rabbit\Base\Core\Exception;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\DB\DBHelper;
-use Rabbit\Web\NotFoundHttpException;
+use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
 use Throwable;
 
 /**
@@ -34,7 +35,7 @@ trait RestTrait
 
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     /** @var string */
-    protected string $queryKey;
+    protected ?string $queryKey = null;
 
     /**
      * @param array $params
