@@ -64,9 +64,6 @@ trait RestTrait
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::create($model, $body);
         });
-        if ($res === [0]) {
-            throw new Exception("Failed to create the object for unknown reason.");
-        }
         return $res;
     }
 
@@ -82,9 +79,6 @@ trait RestTrait
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::update($model, $body, true);
         });
-        if ($res === [0]) {
-            throw new Exception("Failed to update the object for unknown reason.");
-        }
         return $res;
     }
 
