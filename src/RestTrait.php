@@ -94,9 +94,6 @@ trait RestTrait
         $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::delete($model, $body, true);
         });
-        if ($res === [0]) {
-            throw new Exception("Failed to delete the object for unknown reason.");
-        }
         return $res;
     }
 
