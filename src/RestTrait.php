@@ -20,13 +20,9 @@ use Throwable;
  */
 trait RestTrait
 {
-    /** @var CacheInterface */
     protected ?CacheInterface $cache = null;
-    /** @var callable */
     protected $cacheCallback;
-    /** @var string  */
     protected string $ARClass = ARHelper::class;
-
     public static array $joinMap = [
         'lj' => '[<]',
         'rj' => '[>]',
@@ -34,9 +30,8 @@ trait RestTrait
     ];
 
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
-    /** @var string */
     protected ?string $queryKey = null;
-
+    protected ?string $modelClass = null;
     /**
      * @param array $params
      * @param ServerRequestInterface|null $request
