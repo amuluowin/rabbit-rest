@@ -163,14 +163,15 @@ trait RestTrait
      */
     private function buildFilter(array &$filter): string
     {
+        ArrayHelper::toArrayJson($filter);
         $alias = explode('\\', get_class());
         $alias = str_replace('crud', '', strtolower(end($alias)));
         $this->queryKey && $filter = ArrayHelper::remove($filter, $this->queryKey, []);
-        $select = ArrayHelper::remove($filter, 'select', '*');
-        if (is_string($select) && $select === '*') {
-            $select = $alias . '.' . $select;
-        } elseif (is_array($select) && $select === ['*']) {
-            $select = [$alias . '.' . current($select)];
+        $select = ArrayHelper::remove($filter, 'select', ['*']);
+        foreach ($select as &$field) {
+            if (strpos('.', $field) === false) {
+                $field = $alias . '.' . $field;
+            }
         }
         $filter['select'] = $select;
         return $alias;
