@@ -161,7 +161,7 @@ trait RestTrait
      * @param array $filter
      * @return string
      */
-    private function buildFilter(array &$filter): string
+    protected function buildFilter(array &$filter): string
     {
         ArrayHelper::toArrayJson($filter);
         $alias = explode('\\', get_class());
@@ -181,7 +181,7 @@ trait RestTrait
      * @param ServerRequestInterface $request
      * @return int
      */
-    private function getDuration(ServerRequestInterface $request): int
+    protected function getDuration(ServerRequestInterface $request): int
     {
         $duration = -1;
         if (is_callable($this->cacheCallback)) {
