@@ -168,8 +168,8 @@ trait RestTrait
         $alias = str_replace('crud', '', strtolower(end($alias)));
         $this->queryKey && $filter = ArrayHelper::remove($filter, $this->queryKey, []);
         $select = ArrayHelper::remove($filter, 'select', ['*']);
-        foreach ($select as &$field) {
-            if (strpos('.', $field) === false) {
+        foreach ($select as $index => &$field) {
+            if (strpos($field, '.') === false && strpos($field, '(') === false && is_int($index)) {
                 $field = $alias . '.' . $field;
             }
         }
