@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Rabbit\Rest;
 
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
-use Rabbit\ActiveRecord\ARHelper;
-use Rabbit\Base\Core\Exception;
-use Rabbit\Base\Helper\ArrayHelper;
-use Rabbit\DB\DBHelper;
-use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
 use Throwable;
+use Rabbit\DB\DBHelper;
+use Rabbit\Base\Core\Exception;
+use Rabbit\ActiveRecord\ARHelper;
+use Psr\SimpleCache\CacheInterface;
+use Rabbit\Base\Helper\ArrayHelper;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\SimpleCache\InvalidArgumentException;
+use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
 
 /**
  * Trait RestTrait
@@ -32,6 +32,8 @@ trait RestTrait
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     protected ?string $queryKey = null;
     protected ?string $modelClass = null;
+
+    protected array $replaceAlais = [];
     /**
      * @param array $params
      * @param ServerRequestInterface|null $request
@@ -138,7 +140,7 @@ trait RestTrait
                 $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->andWhere(array_combine($keys, $values))->cache($this->getDuration($request), $this->cache)->one();
             }
         } elseif ($id !== null) {
-            $data = $model = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->andWhere(array_combine($keys, [$id]))->cache($this->getDuration($request), $this->cache)->one();
+            $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->andWhere(array_combine($keys, [$id]))->cache($this->getDuration($request), $this->cache)->one();
         } else {
             $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
         }
@@ -165,7 +167,7 @@ trait RestTrait
     {
         ArrayHelper::toArrayJson($filter);
         $alias = explode('\\', get_class());
-        $alias = str_replace('crud', '', strtolower(end($alias)));
+        $alias = str_replace([...$this->replaceAlais, 'crud'], '', strtolower(end($alias)));
         $this->queryKey && $filter = ArrayHelper::remove($filter, $this->queryKey, []);
         $select = ArrayHelper::remove($filter, 'select', ['*']);
         foreach ($select as $index => &$field) {
