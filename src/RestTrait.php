@@ -6,6 +6,7 @@ namespace Rabbit\Rest;
 
 use Throwable;
 use Rabbit\DB\DBHelper;
+use Rabbit\Base\Core\Context;
 use Rabbit\Base\Core\Exception;
 use Rabbit\ActiveRecord\ARHelper;
 use Psr\SimpleCache\CacheInterface;
@@ -32,8 +33,19 @@ trait RestTrait
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     protected ?string $queryKey = null;
     protected ?string $modelClass = null;
-
     protected array $replaceAlais = [];
+    protected string $sceneKey = 'scene';
+
+    public function __get($name)
+    {
+        return Context::get('crud.' . $name);
+    }
+
+    public function __set($name, $value)
+    {
+        Context::set('crud.' . $name, $value);
+    }
+
     /**
      * @param array $params
      * @param ServerRequestInterface|null $request
@@ -46,7 +58,8 @@ trait RestTrait
         if (!in_array($method, $this->crudMethods)) {
             throw new NotFoundHttpException("Can not find the route:" . $request->getUri()->getPath());
         }
-        return $this->$method($params, $request);
+        $this->$method($params, $request);
+        return $this->result;
     }
 
     /**
@@ -55,13 +68,12 @@ trait RestTrait
      * @return array
      * @throws Exception
      */
-    protected function create(array $body, ServerRequestInterface $request = null): array
+    protected function create(array $body, ServerRequestInterface $request = null): void
     {
         $model = new $this->modelClass();
-        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::create($model, $body);
         });
-        return $res;
     }
 
     /**
@@ -70,13 +82,12 @@ trait RestTrait
      * @return array
      * @throws Exception
      */
-    protected function update(array $body, ServerRequestInterface $request = null): array
+    protected function update(array $body, ServerRequestInterface $request = null): void
     {
         $model = new $this->modelClass();
-        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::update($model, $body, true);
         });
-        return $res;
     }
 
     /**
@@ -85,13 +96,12 @@ trait RestTrait
      * @return mixed
      * @throws Exception
      */
-    protected function delete(array $body, ServerRequestInterface $request = null)
+    protected function delete(array $body, ServerRequestInterface $request = null): void
     {
         $model = new $this->modelClass();
-        $res = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
+        $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::delete($model, $body, true);
         });
-        return $res;
     }
 
     /**
@@ -101,10 +111,10 @@ trait RestTrait
      * @throws InvalidArgumentException
      * @throws Throwable
      */
-    protected function list(array $filter, ServerRequestInterface $request = null): array
+    protected function list(array $filter, ServerRequestInterface $request = null): void
     {
         $alias = $this->buildFilter($filter);
-        return DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
+        $this->result = DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
     }
 
     /**
@@ -112,11 +122,11 @@ trait RestTrait
      * @param ServerRequestInterface|null $request
      * @return array
      */
-    protected function index(array $filter, ServerRequestInterface $request = null): array
+    protected function index(array $filter, ServerRequestInterface $request = null): void
     {
         $alias = $this->buildFilter($filter);
         $page = ArrayHelper::remove($filter, 'page', 0);
-        return DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
+        $this->result = DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
     }
 
     /**
@@ -126,7 +136,7 @@ trait RestTrait
      * @throws InvalidArgumentException
      * @throws Throwable
      */
-    protected function view(array $filter, ServerRequestInterface $request = null): array
+    protected function view(array $filter, ServerRequestInterface $request = null): void
     {
         $id = ArrayHelper::getValue($filter, 'id');
         $alias = $this->buildFilter($filter);
@@ -144,7 +154,7 @@ trait RestTrait
         } else {
             $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->one();
         }
-        return empty($data) ? [] : $data;
+        $this->result = empty($data) ? [] : $data;
     }
 
     /**
@@ -152,11 +162,11 @@ trait RestTrait
      * @param ServerRequestInterface|null $request
      * @return mixed
      */
-    protected function search(array $filter, ServerRequestInterface $request = null)
+    protected function search(array $filter, ServerRequestInterface $request = null): void
     {
         $alias = $this->buildFilter($filter);
         $method = ArrayHelper::remove($filter, 'method', 'all');
-        return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+        $this->result = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
     }
 
     /**
