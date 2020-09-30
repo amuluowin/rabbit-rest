@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Rabbit\Rest;
 
-use Throwable;
 use Rabbit\DB\DBHelper;
-use Rabbit\Base\Core\Context;
-use Rabbit\Base\Core\Exception;
+use Rabbit\Base\Core\CoObject;
 use Rabbit\ActiveRecord\ARHelper;
 use Psr\SimpleCache\CacheInterface;
 use Rabbit\Base\Helper\ArrayHelper;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
 
 /**
@@ -21,6 +18,7 @@ use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
  */
 trait RestTrait
 {
+    use CoObject;
     protected ?CacheInterface $cache = null;
     protected $cacheCallback;
     protected string $ARClass = ARHelper::class;
@@ -36,40 +34,33 @@ trait RestTrait
     protected array $replaceAlais = [];
     protected string $sceneKey = 'scene';
 
-    public function __get($name)
-    {
-        return Context::get('crud.' . $name);
-    }
-
-    public function __set($name, $value)
-    {
-        Context::set('crud.' . $name, $value);
-    }
-
     /**
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
      * @param array $params
-     * @param ServerRequestInterface|null $request
+     * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param string $method
-     * @return mixed
-     * @throws NotFoundHttpException
+     * @return void
      */
     public function __invoke(array $params = [], ServerRequestInterface $request = null, string $method = '')
     {
         if (!in_array($method, $this->crudMethods)) {
             throw new NotFoundHttpException("Can not find the route:" . $request->getUri()->getPath());
         }
-        $this->$method($params, $request);
+        $this->params = $params;
+        $this->$method($request);
         return $this->result;
     }
 
     /**
-     * @param array $body
-     * @param ServerRequestInterface|null $request
-     * @return array
-     * @throws Exception
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function create(array $body, ServerRequestInterface $request = null): void
+    protected function create(ServerRequestInterface $request = null): void
     {
+        $body = $this->params;
         $model = new $this->modelClass();
         $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::create($model, $body);
@@ -77,13 +68,14 @@ trait RestTrait
     }
 
     /**
-     * @param array $body
-     * @param ServerRequestInterface|null $request
-     * @return array
-     * @throws Exception
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function update(array $body, ServerRequestInterface $request = null): void
+    protected function update(ServerRequestInterface $request = null): void
     {
+        $body = $this->params;
         $model = new $this->modelClass();
         $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::update($model, $body, true);
@@ -91,13 +83,14 @@ trait RestTrait
     }
 
     /**
-     * @param array $body
-     * @param ServerRequestInterface|null $request
-     * @return mixed
-     * @throws Exception
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function delete(array $body, ServerRequestInterface $request = null): void
+    protected function delete(ServerRequestInterface $request = null): void
     {
+        $body = $this->params;
         $model = new $this->modelClass();
         $this->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
             return $this->ARClass::delete($model, $body, true);
@@ -105,41 +98,43 @@ trait RestTrait
     }
 
     /**
-     * @param array $filter
-     * @param ServerRequestInterface|null $request
-     * @return array
-     * @throws InvalidArgumentException
-     * @throws Throwable
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function list(array $filter, ServerRequestInterface $request = null): void
+    protected function list(ServerRequestInterface $request = null): void
     {
-        $alias = $this->buildFilter($filter);
+        $alias = $this->buildFilter();
+        $filter = $this->params;
         $this->result = DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->all();
     }
 
     /**
-     * @param array $filter
-     * @param ServerRequestInterface|null $request
-     * @return array
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function index(array $filter, ServerRequestInterface $request = null): void
+    protected function index(ServerRequestInterface $request = null): void
     {
-        $alias = $this->buildFilter($filter);
+        $alias = $this->buildFilter();
+        $filter = $this->params;
         $page = ArrayHelper::remove($filter, 'page', 0);
         $this->result = DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $filter, $page, $this->getDuration($request), $this->cache);
     }
 
     /**
-     * @param array $filter
-     * @param ServerRequestInterface|null $request
-     * @return array
-     * @throws InvalidArgumentException
-     * @throws Throwable
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function view(array $filter, ServerRequestInterface $request = null): void
+    protected function view(ServerRequestInterface $request = null): void
     {
+        $alias = $this->buildFilter();
+        $filter = $this->params;
         $id = ArrayHelper::getValue($filter, 'id');
-        $alias = $this->buildFilter($filter);
         $keys = $this->modelClass::primaryKey();
         foreach ($keys as $index => $key) {
             $keys[$index] = $alias . '.' . $key;
@@ -158,23 +153,27 @@ trait RestTrait
     }
 
     /**
-     * @param array $filter
-     * @param ServerRequestInterface|null $request
-     * @return mixed
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return void
      */
-    protected function search(array $filter, ServerRequestInterface $request = null): void
+    protected function search(ServerRequestInterface $request = null): void
     {
-        $alias = $this->buildFilter($filter);
+        $alias = $this->buildFilter();
+        $filter = $this->params;
         $method = ArrayHelper::remove($filter, 'method', 'all');
         $this->result = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $filter)->cache($this->getDuration($request), $this->cache)->$method();
     }
 
     /**
-     * @param array $filter
+     * @Author Albert 63851587@qq.com
+     * @DateTime 2020-09-30
      * @return string
      */
-    protected function buildFilter(array &$filter): string
+    protected function buildFilter(): string
     {
+        $filter = $this->params;
         ArrayHelper::toArrayJson($filter);
         $alias = explode('\\', get_class());
         $alias = str_replace([...$this->replaceAlais, 'crud'], '', strtolower(end($alias)));
@@ -186,6 +185,7 @@ trait RestTrait
             }
         }
         $filter['select'] = $select;
+        $this->params = $filter;
         return $alias;
     }
 
