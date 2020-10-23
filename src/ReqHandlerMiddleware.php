@@ -2,14 +2,14 @@
 
 namespace Rabbit\Rest;
 
-use DI\NotFoundException;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use Rabbit\Base\Core\Context;
-use Rabbit\Web\AttributeEnum;
 use Throwable;
+use DI\NotFoundException;
+use Rabbit\Base\Core\Context;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Rabbit\HttpServer\Middleware\AcceptTrait;
 
 /**
  * Class ReqHandlerMiddleware
@@ -17,6 +17,8 @@ use Throwable;
  */
 class ReqHandlerMiddleware implements MiddlewareInterface
 {
+    use AcceptTrait;
+
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     /** @var string */
     protected string $prefix = '';
@@ -49,11 +51,11 @@ class ReqHandlerMiddleware implements MiddlewareInterface
         }
 
         if ($len === 3 && in_array(strtolower(end($route)), $this->crudMethods)) {
-            list($module, $model, $handler) = $route;
+            list($module, $model, $func) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($model) . "Crud";
         } else {
-            list($module, $handler) = $route;
-            $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($handler);
+            list($module, $func) = $route;
+            $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($func);
         }
 
         // 校验路由所指定的类
@@ -69,13 +71,13 @@ class ReqHandlerMiddleware implements MiddlewareInterface
         $params = $request->getParsedBody() + $request->getQueryParams();
 
         /* @var ResponseInterface $response */
-        $response = $class($params, $request, $handler);
+        $response = $class($params, $request, $func);
         if (!$response instanceof ResponseInterface) {
             /* @var ResponseInterface $newResponse */
             $newResponse = Context::get('response');
-            $response = $newResponse->withAttribute(AttributeEnum::RESPONSE_ATTRIBUTE, $response);
+            $this->handleAccept($request, $newResponse, $response);
         }
 
-        return $response;
+        return $handler->handle($request);
     }
 }
