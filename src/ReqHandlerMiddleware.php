@@ -4,7 +4,7 @@ namespace Rabbit\Rest;
 
 use Throwable;
 use DI\NotFoundException;
-use Rabbit\Base\Core\Context;
+use Rabbit\Web\ResponseContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -74,7 +74,7 @@ class ReqHandlerMiddleware implements MiddlewareInterface
         $response = $class($params, $request, $func);
         if (!$response instanceof ResponseInterface) {
             /* @var ResponseInterface $newResponse */
-            $newResponse = Context::get('response');
+            $newResponse = ResponseContext::get();
             return $this->handleAccept($request, $newResponse, $response);
         }
 
