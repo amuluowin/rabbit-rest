@@ -40,51 +40,47 @@ trait RestTrait
         }
         $data = new stdClass();
         $data->params = $params;
-        $this->$method($data, $request);
-        return $data->result;
+        return $this->$method($data, $request);
     }
 
-    protected function create(stdClass $data, ServerRequestInterface $request = null): void
+    protected function create(stdClass $data, ServerRequestInterface $request = null): array
     {
-        $body = $this->params;
         $model = new $this->modelClass();
-        $data->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return $this->ARClass::create($model, $body);
+        return $this->modelClass::getDb()->transaction(function () use ($model, $data) {
+            return $this->ARClass::create($model, $data->params);
         });
     }
 
-    protected function update(stdClass $data, ServerRequestInterface $request = null): void
+    protected function update(stdClass $data, ServerRequestInterface $request = null): array
     {
-        $body = $this->params;
         $model = new $this->modelClass();
-        $data->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return $this->ARClass::update($model, $body, true);
+        return $this->modelClass::getDb()->transaction(function () use ($model, $data) {
+            return $this->ARClass::update($model, $data->params, true);
         });
     }
 
-    protected function delete(stdClass $data, ServerRequestInterface $request = null): void
+    protected function delete(stdClass $data, ServerRequestInterface $request = null): int
     {
-        $body = $this->params;
         $model = new $this->modelClass();
-        $data->result = $this->modelClass::getDb()->transaction(function () use ($model, &$body) {
-            return $this->ARClass::delete($model, $body, true);
+        return $this->modelClass::getDb()->transaction(function () use ($model, $data) {
+            return $this->ARClass::delete($model, $data->params, true);
         });
     }
 
-    protected function list(stdClass $data, ServerRequestInterface $request = null): void
+    protected function list(stdClass $data, ServerRequestInterface $request = null): array
     {
         $alias = $this->buildFilter($data);
-        $data->result = DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->all();
+        return DBHelper::Search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->all();
     }
 
-    protected function index(stdClass $data, ServerRequestInterface $request = null): void
+    protected function index(stdClass $data, ServerRequestInterface $request = null): array
     {
         $alias = $this->buildFilter($data);
         $page = ArrayHelper::remove($data->params, 'page', 0);
-        $data->result = DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $data->params, $page, $this->getDuration($request), $this->cache);
+        return DBHelper::SearchList($this->modelClass::find()->alias($alias)->asArray(), $data->params, $page, $this->getDuration($request), $this->cache);
     }
 
-    protected function view(stdClass $data, ServerRequestInterface $request = null): void
+    protected function view(stdClass $data, ServerRequestInterface $request = null): ?array
     {
         $alias = $this->buildFilter($data);
         $id = ArrayHelper::getValue($data->params, 'id');
@@ -95,21 +91,20 @@ trait RestTrait
         if (count($keys) > 1 && $id !== null) {
             $values = explode(',', $id);
             if (count($keys) === count($values)) {
-                $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->andWhere(array_combine($keys, $values))->cache($this->getDuration($request), $this->cache)->one();
+                return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->andWhere(array_combine($keys, $values))->cache($this->getDuration($request), $this->cache)->one();
             }
         } elseif ($id !== null) {
-            $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->andWhere(array_combine($keys, [$id]))->cache($this->getDuration($request), $this->cache)->one();
+            return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->andWhere(array_combine($keys, [$id]))->cache($this->getDuration($request), $this->cache)->one();
         } else {
-            $data = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->one();
+            return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->one();
         }
-        $data->result = empty($data) ? [] : $data;
     }
 
-    protected function search(stdClass $data, ServerRequestInterface $request = null): void
+    protected function search(stdClass $data, ServerRequestInterface $request = null)
     {
         $alias = $this->buildFilter($data);
         $method = ArrayHelper::remove($data->params, 'method', 'all');
-        $data->result = DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->$method();
+        return DBHelper::search($this->modelClass::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->$method();
     }
 
     protected function buildFilter(stdClass $data): string
