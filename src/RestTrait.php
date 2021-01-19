@@ -21,11 +21,6 @@ trait RestTrait
     protected ?CacheInterface $cache = null;
     protected $cacheCallback;
     protected string $ARClass = ARHelper::class;
-    public static array $joinMap = [
-        'lj' => '[<]',
-        'rj' => '[>]',
-        'fj' => '[<>]'
-    ];
 
     protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     protected ?string $queryKey = null;
