@@ -46,16 +46,31 @@ class ReqHandlerMiddleware implements MiddlewareInterface
         // 解析路由
         $route = explode('/', ltrim($url, '/'));
         $len = count($route);
-        if (!in_array($len, [2, 3])) {
+        if ($len > 3) {
             throw new NotFoundException("The route type error:" . $request->getUri()->getPath());
         }
 
+        $args = [
+            $request
+        ];
         if ($len === 3 && in_array(strtolower(end($route)), $this->crudMethods)) {
             list($module, $model, $func) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($model) . "Crud";
-        } else {
+        } elseif ($len === 2) {
             list($module, $func) = $route;
             $class = 'Apis\\' . ucfirst($module) . "\\Handlers\\" . ucfirst($func);
+        } else {
+            $db = explode('-', array_shift($route));
+            if (count($db) === 1) {
+                $db = array_shift($db);
+                $db = empty($db) ? 'db' : $db;
+                $key = 'Default';
+            } else {
+                [$db, $key] = $db;
+            }
+            $func = $request->getMethod();
+            $class = BaseApi::class;
+            $args = [...$args, $func, $db, $key];
         }
 
         // 校验路由所指定的类
@@ -67,11 +82,8 @@ class ReqHandlerMiddleware implements MiddlewareInterface
             throw $error;
         }
 
-        // 把GET和POST中的参数主体合并，POST的覆盖GET的
-        $params = $request->getParsedBody() + $request->getQueryParams();
-
         /* @var ResponseInterface $response */
-        $response = $class($params, $request, $func);
+        $response = $class(...$args);
         if (!$response instanceof ResponseInterface) {
             /* @var ResponseInterface $newResponse */
             $newResponse = ResponseContext::get();
