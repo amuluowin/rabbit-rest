@@ -18,8 +18,6 @@ use Rabbit\HttpServer\Middleware\AcceptTrait;
 class ReqHandlerMiddleware implements MiddlewareInterface
 {
     use AcceptTrait;
-
-    protected array $crudMethods = ['create', 'update', 'delete', 'view', 'list', 'search', 'index'];
     /** @var string */
     protected string $prefix = '';
 

@@ -5,25 +5,19 @@ declare(strict_types=1);
 namespace Rabbit\Rest;
 
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\SimpleCache\CacheInterface;
-use Rabbit\ActiveRecord\ARHelper;
 use Rabbit\Base\Exception\InvalidArgumentException;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\DB\DBHelper;
 use Rabbit\DB\Query;
 use stdClass;
 
-trait RestTrait
+class RestJson extends ModelJson
 {
-    protected ?string $queryKey = null;
-    protected ?CacheInterface $cache = null;
-    protected $cacheCallback;
-
-    protected array $modelMap = [];
-    protected string $ARClass = ARHelper::class;
-
-    public function __invoke(ServerRequestInterface $request, string $method, string $db = 'db', string $key = 'default')
+    public function __invoke(ServerRequestInterface $request, string $method, string $db, string $key = null)
     {
+        if ($key === null) {
+            return parent::__invoke($request, $method, $db);
+        }
         $method = strtolower($method);
         $data = new stdClass();
         $data->params = $request->getParsedBody() + $request->getQueryParams();
@@ -58,10 +52,10 @@ trait RestTrait
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->tableMap[$model])) {
+            if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->tableMap[$model]();
+            $model = new $this->modelMap[$model]['class']();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::create($model, $value);
             });
@@ -73,10 +67,10 @@ trait RestTrait
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->tableMap[$model])) {
+            if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->tableMap[$model]();
+            $model = new $this->modelMap[$model]['class']();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::update($model, $value, true);
             });
@@ -88,23 +82,14 @@ trait RestTrait
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->tableMap[$model])) {
+            if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->tableMap[$model]();
+            $model = new $this->modelMap[$model]['class']();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::delete($model, $value);
             });
         }
         return $result;
-    }
-
-    protected function getDuration(ServerRequestInterface $request): int
-    {
-        $duration = -1;
-        if (is_callable($this->cacheCallback)) {
-            $duration = call_user_func($this->cacheCallback, $request);
-        }
-        return $duration === '' ? -1 : (int)$duration;
     }
 }
