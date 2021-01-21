@@ -55,7 +55,7 @@ class RestJson extends ModelJson
             if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->modelMap[$model]['class']();
+            $model = (new $this->modelMap[$model]->getClass())();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::create($model, $value);
             });
@@ -70,7 +70,7 @@ class RestJson extends ModelJson
             if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->modelMap[$model]['class']();
+            $model = (new $this->modelMap[$model]->getClass())();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::update($model, $value, true);
             });
@@ -85,7 +85,7 @@ class RestJson extends ModelJson
             if (!isset($this->modelMap[$model])) {
                 throw new InvalidArgumentException("Model not exists!");
             }
-            $model = new $this->modelMap[$model]['class']();
+            $model = (new $this->modelMap[$model]->getClass())();
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::delete($model, $value);
             });

@@ -31,11 +31,11 @@ class ModelJson
         if (!isset($this->modelMap[$model])) {
             throw new InvalidArgumentException("Model not exists!");
         }
-        if (!in_array($method, $this->modelMap[$model]['methods'])) {
+        if (!in_array($method, $this->modelMap[$model]->getMethods())) {
             throw new NotFoundHttpException("The route type error:" . $request->getUri()->getPath());
         }
-        $class = $this->modelMap[$model]['class'];
-        [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]['events'], ['before', 'after']);
+        $class = $this->modelMap[$model]->getClass();
+        [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]->getEvents(), ['before', 'after']);
         $entry = new $class();
 
         if ($before && isset($before[$method]) && is_callable($before[$method])) {
@@ -120,7 +120,7 @@ class ModelJson
         $this->queryKey && $data->params = ArrayHelper::remove($data->params, $this->queryKey, []);
         $select = ArrayHelper::remove($data->params, 'select', ['*']);
         foreach ($select as $index => &$field) {
-            if (strpos($field, '.') === false && strpos($field, '(') === false && is_int($index)) {
+            if (is_string($field) && strpos($field, '.') === false && is_int($index)) {
                 $field = $alias . '.' . $field;
             }
         }
