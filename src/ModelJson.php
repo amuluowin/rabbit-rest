@@ -20,7 +20,6 @@ class ModelJson
     protected $cacheCallback;
     protected string $ARClass = ARHelper::class;
     protected ?string $queryKey = null;
-    protected array $replaceAlais = [];
     protected string $sceneKey = 'scene';
     public array $modelMap = [];
 
@@ -37,7 +36,7 @@ class ModelJson
         }
         $class = $this->modelMap[$model]['class'];
         [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]['events'], ['before', 'after']);
-        $model = new $class();
+        $entry = new $class();
 
         if ($before && isset($before[$method]) && is_callable($before[$method])) {
             $before[$method]($data, $request);
@@ -47,14 +46,12 @@ class ModelJson
             if ($before && isset($before['filter']) && is_callable($before['filter'])) {
                 $before['filter']($data, $request);
             }
-            $alias = $this->buildFilter($data, $model);
+            $this->buildFilter($data, $model);
             if ($after && isset($after['filter']) && is_callable($after['filter'])) {
                 $after['filter']($data, $request);
             }
-        } else {
-            $alias = null;
         }
-        $data->result = $this->$method($data, $request, $model, $alias);
+        $data->result = $this->$method($data, $request, $entry, $model);
         if ($after && isset($after[$method]) && is_callable($after[$method])) {
             $after[$method]($data, $request);
         }
@@ -118,10 +115,8 @@ class ModelJson
         return DBHelper::search($model::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->$method();
     }
 
-    protected function buildFilter(stdClass $data, BaseActiveRecord $model): string
+    protected function buildFilter(stdClass $data, string $alias): void
     {
-        $alias = explode('\\', get_class($model));
-        $alias = str_replace($this->replaceAlais, '', strtolower(end($alias)));
         $this->queryKey && $data->params = ArrayHelper::remove($data->params, $this->queryKey, []);
         $select = ArrayHelper::remove($data->params, 'select', ['*']);
         foreach ($select as $index => &$field) {
@@ -130,7 +125,6 @@ class ModelJson
             }
         }
         $data->params['select'] = $select;
-        return $alias;
     }
 
     protected function getDuration(ServerRequestInterface $request): int
