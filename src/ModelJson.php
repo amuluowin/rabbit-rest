@@ -28,6 +28,7 @@ class ModelJson
     {
         $data = new stdClass();
         $data->params = $request->getParsedBody() + $request->getQueryParams();
+
         if (!isset($this->modelMap[$model])) {
             throw new InvalidArgumentException("Model not exists!");
         }
@@ -35,7 +36,29 @@ class ModelJson
             throw new NotFoundHttpException("The route type error:" . $request->getUri()->getPath());
         }
         $class = $this->modelMap[$model]['class'];
-        return $this->$method($data, $request, new $class());
+        [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]['events'], ['before', 'after']);
+        $model = new $class();
+
+        if ($before && isset($before[$method]) && is_callable($before[$method])) {
+            $before[$method]($data, $request);
+        }
+        if (in_array($method, ['list', 'index', 'view', 'search'])) {
+            ArrayHelper::toArrayJson($data->params);
+            if ($before && isset($before['filter']) && is_callable($before['filter'])) {
+                $before['filter']($data, $request);
+            }
+            $alias = $this->buildFilter($data, $model);
+            if ($after && isset($after['filter']) && is_callable($after['filter'])) {
+                $after['filter']($data, $request);
+            }
+        } else {
+            $alias = null;
+        }
+        $data->result = $this->$method($data, $request, $model, $alias);
+        if ($after && isset($after[$method]) && is_callable($after[$method])) {
+            $after[$method]($data, $request);
+        }
+        return $data->result;
     }
 
     protected function create(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): array
@@ -59,22 +82,19 @@ class ModelJson
         });
     }
 
-    protected function list(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): array
+    protected function list(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model, string $alias): array
     {
-        $alias = $this->buildFilter($data, $model);
         return DBHelper::Search($model::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->all();
     }
 
-    protected function index(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): array
+    protected function index(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model, string $alias): array
     {
-        $alias = $this->buildFilter($data, $model);
         $page = ArrayHelper::remove($data->params, 'page', 0);
         return DBHelper::SearchList($model::find()->alias($alias)->asArray(), $data->params, $page, $this->getDuration($request), $this->cache);
     }
 
-    protected function view(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): ?array
+    protected function view(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model, string $alias): ?array
     {
-        $alias = $this->buildFilter($data, $model);
         $id = ArrayHelper::getValue($data->params, 'id');
         $keys = $model::primaryKey();
         foreach ($keys as $index => $key) {
@@ -92,16 +112,14 @@ class ModelJson
         }
     }
 
-    protected function search(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model)
+    protected function search(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model, string $alias)
     {
-        $alias = $this->buildFilter($data, $model);
         $method = ArrayHelper::remove($data->params, 'method', 'all');
         return DBHelper::search($model::find()->alias($alias)->asArray(), $data->params)->cache($this->getDuration($request), $this->cache)->$method();
     }
 
     protected function buildFilter(stdClass $data, BaseActiveRecord $model): string
     {
-        ArrayHelper::toArrayJson($data->params);
         $alias = explode('\\', get_class($model));
         $alias = str_replace($this->replaceAlais, '', strtolower(end($alias)));
         $this->queryKey && $data->params = ArrayHelper::remove($data->params, $this->queryKey, []);
