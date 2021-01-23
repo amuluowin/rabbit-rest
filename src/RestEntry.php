@@ -7,7 +7,7 @@ namespace Rabbit\Rest;
 class RestEntry
 {
     protected string $class;
-    protected array $methods = ['create', 'update', 'del', 'view', 'list', 'search', 'index', 'get', 'put', 'post', 'delete'];
+    protected array $methods = ['create', 'save', 'update', 'del', 'view', 'list', 'search', 'index', 'get', 'put', 'post', 'delete'];
     protected bool $auth = true;
     protected array $events = [];
 

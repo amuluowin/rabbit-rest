@@ -65,6 +65,13 @@ class ModelJson
         });
     }
 
+    protected function save(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): array
+    {
+        return $model::getDb()->transaction(function () use ($model, $data) {
+            return $this->ARClass::update($model, $data->params);
+        });
+    }
+
     protected function update(stdClass $data, ServerRequestInterface $request, BaseActiveRecord $model): array
     {
         return $model::getDb()->transaction(function () use ($model, $data) {
