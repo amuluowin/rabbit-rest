@@ -11,7 +11,7 @@ use Rabbit\DB\DBHelper;
 use Rabbit\DB\Query;
 use stdClass;
 
-class RestJson extends ModelJson
+abstract class RestJson extends ModelJson
 {
     public function __invoke(ServerRequestInterface $request, string $method, string $db, string $key = null)
     {

@@ -13,7 +13,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Rabbit\HttpServer\Exceptions\NotFoundHttpException;
 use stdClass;
 
-class ModelJson
+abstract class ModelJson
 {
     protected ?CacheInterface $cache = null;
     protected $cacheCallback;
