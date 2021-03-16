@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Rabbit\Rest;
 
 use Psr\Http\Message\ServerRequestInterface;
-use Rabbit\Base\Exception\InvalidArgumentException;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\DB\DBHelper;
 use stdClass;
@@ -58,10 +57,14 @@ abstract class RestJson extends ModelJson
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->modelMap[$model])) {
-                throw new InvalidArgumentException("Model not exists!");
+            $arr = explode(':', $model);
+            if (count($arr) === 2) {
+                [$key, $model] = $arr;
+            } else {
+                [$model] = $arr;
+                $key = 'default';
             }
-            $model = (new $this->modelMap[$model]->getClass())();
+            $model = $this->ARClass::getModel($model, $key);
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::create($model, $value);
             });
@@ -73,10 +76,14 @@ abstract class RestJson extends ModelJson
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->modelMap[$model])) {
-                throw new InvalidArgumentException("Model not exists!");
+            $arr = explode(':', $model);
+            if (count($arr) === 2) {
+                [$key, $model] = $arr;
+            } else {
+                [$model] = $arr;
+                $key = 'default';
             }
-            $model = (new $this->modelMap[$model]->getClass())();
+            $model = $this->ARClass::getModel($model, $key);
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::update($model, $value, true);
             });
@@ -88,10 +95,14 @@ abstract class RestJson extends ModelJson
     {
         $result = [];
         foreach ($data->params as $model => $value) {
-            if (!isset($this->modelMap[$model])) {
-                throw new InvalidArgumentException("Model not exists!");
+            $arr = explode(':', $model);
+            if (count($arr) === 2) {
+                [$key, $model] = $arr;
+            } else {
+                [$model] = $arr;
+                $key = 'default';
             }
-            $model = (new $this->modelMap[$model]->getClass())();
+            $model = $this->ARClass::getModel($model, $key);
             $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::delete($model, $value);
             });
