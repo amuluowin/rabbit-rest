@@ -8,28 +8,34 @@ use Psr\Http\Message\ServerRequestInterface;
 use Rabbit\Base\Exception\InvalidArgumentException;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\DB\DBHelper;
-use Rabbit\DB\Query;
 use stdClass;
 
 abstract class RestJson extends ModelJson
 {
-    public function __invoke(ServerRequestInterface $request, string $method, string $db, string $key = null)
+    public function __invoke(ServerRequestInterface $request, string $method, string $db = null)
     {
-        if ($key === null) {
+        if ($db !== null) {
             return parent::__invoke($request, $method, $db);
         }
         $method = strtolower($method);
         $data = new stdClass();
         $data->params = $request->getParsedBody() + $request->getQueryParams();
-        return $this->$method($data, $request, $db, $key);
+        return $this->$method($data, $request);
     }
 
-    protected function get(stdClass $data, ServerRequestInterface $request, string $db, string $key): array
+    protected function get(stdClass $data, ServerRequestInterface $request): array
     {
         $result = [];
         ArrayHelper::toArrayJson($data->params);
-        foreach ($data->params as $method => $value) {
-            foreach ($value as $table => $filter) {
+        wgeach($data->params, function (string $config, array $value) use ($request, &$result) {
+            $arr = explode(':', $config);
+            if (count($arr) === 2) {
+                [$key, $method] = $arr;
+            } else {
+                [$method] = $arr;
+                $key = 'default';
+            }
+            wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request) {
                 $tableArr = explode(':', $table);
                 $table = array_shift($tableArr);
                 $alias = array_shift($tableArr);
@@ -39,12 +45,12 @@ abstract class RestJson extends ModelJson
                 ArrayHelper::remove($filter, 'from');
                 $page = ArrayHelper::remove($filter, 'page');
                 if ($page !== null) {
-                    $result[$table] = DBHelper::SearchList((new Query(getDI($db)->get($key)))->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                    $result["$config:$table"] = DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
                 } else {
-                    $result[$table] = DBHelper::Search((new Query(getDI($db)->get($key)))->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                    $result["$config:$table"] = DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
                 }
-            }
-        }
+            });
+        });
         return $result;
     }
 
