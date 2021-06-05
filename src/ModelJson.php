@@ -27,30 +27,39 @@ abstract class ModelJson
         $data = new stdClass();
         $data->params = $request->getParsedBody() + $request->getQueryParams();
 
-        if (!isset($this->modelMap[$model])) {
+        if ($this->modelMap[$model] ?? false) {
             throw new InvalidArgumentException("Model not exists!");
         }
         if (!in_array($method, $this->modelMap[$model]->getMethods())) {
             throw new NotFoundHttpException("The route type error:" . $request->getUri()->getPath());
         }
-        [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]->getEvents(), ['before', 'after']);
-        if ($before && isset($before[$method]) && is_callable($before[$method])) {
-            $before[$method]($data, $request);
-        }
-        if (in_array($method, ['list', 'index', 'view', 'search'])) {
-            ArrayHelper::toArrayJson($data->params);
-            if ($before && isset($before['filter']) && is_callable($before['filter'])) {
-                $before['filter']($data, $request);
+        $func = function () use ($model, $method, $data, $request) {
+            [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]->getEvents(), ['before', 'after']);
+            if ($before && isset($before[$method]) && is_callable($before[$method])) {
+                $before[$method]($data, $request);
             }
-            $this->buildFilter($data, $model);
-            if ($after && isset($after['filter']) && is_callable($after['filter'])) {
-                $after['filter']($data, $request);
+            if (in_array($method, ['list', 'index', 'view', 'search'])) {
+                ArrayHelper::toArrayJson($data->params);
+                if ($before && isset($before['filter']) && is_callable($before['filter'])) {
+                    $before['filter']($data, $request);
+                }
+                $this->buildFilter($data, $model);
+                if ($after && isset($after['filter']) && is_callable($after['filter'])) {
+                    $after['filter']($data, $request);
+                }
             }
-        }
 
-        $data->result = $this->$method($data, $request, $this->modelMap[$model], $model);
-        if ($after && isset($after[$method]) && is_callable($after[$method])) {
-            $after[$method]($data, $request);
+            $data->result = $this->$method($data, $request, $this->modelMap[$model], $model);
+            if ($after && isset($after[$method]) && is_callable($after[$method])) {
+                $after[$method]($data, $request);
+            }
+            return $data;
+        };
+        if (in_array($method, RestEntry::SHARE_FUNC)) {
+            $key = $method . ':' . md5(\igbinary_serialize($data->params));
+            $data = share($key, $func, $this->modelMap[$model]->getShareTimeout())->result;
+        } else {
+            $data = $func();
         }
         return $data->result;
     }

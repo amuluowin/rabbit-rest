@@ -17,8 +17,11 @@ abstract class RestJson extends ModelJson
             return parent::__invoke($request, $method, $db);
         }
         $method = strtolower($method);
+        $query = $request->getParsedBody();
+        $body = $request->getQueryParams();
         $data = new stdClass();
-        $data->params = $request->getParsedBody() + $request->getQueryParams();
+        $data->share = ArrayHelper::remove($query, 'share');
+        $data->params =  $query + $body;
         return $this->$method($data, $request);
     }
 
@@ -26,7 +29,7 @@ abstract class RestJson extends ModelJson
     {
         $result = [];
         ArrayHelper::toArrayJson($data->params);
-        wgeach($data->params, function (string $config, array $value) use ($request, &$result) {
+        wgeach($data->params, function (string $config, array $value) use ($request, &$result, $data) {
             $arr = explode(':', $config);
             if (count($arr) === 2) {
                 [$key, $method] = $arr;
@@ -34,7 +37,7 @@ abstract class RestJson extends ModelJson
                 [$method] = $arr;
                 $key = 'default';
             }
-            wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request) {
+            wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request, $data) {
                 $tableArr = explode(':', $table);
                 $table = array_shift($tableArr);
                 $alias = array_shift($tableArr);
@@ -42,11 +45,23 @@ abstract class RestJson extends ModelJson
                     $filter['alias'] = $alias;
                 }
                 ArrayHelper::remove($filter, 'from');
-                $page = ArrayHelper::remove($filter, 'page');
-                if ($page !== null) {
-                    $result["$config:$table"] = DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                if (is_numeric($data->share) && (int)$data->share > 0) {
+                    $name = "$config:$table:" . md5(\igbinary_serialize($filter));
+                    $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method) {
+                        $page = ArrayHelper::remove($filter, 'page');
+                        if ($page !== null) {
+                            return DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                        } else {
+                            return DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                        }
+                    }, (int)$data->share)->result;
                 } else {
-                    $result["$config:$table"] = DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                    $page = ArrayHelper::remove($filter, 'page');
+                    if ($page !== null) {
+                        $result["$config:$table"] = DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                    } else {
+                        $result["$config:$table"] = DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                    }
                 }
             });
         });
