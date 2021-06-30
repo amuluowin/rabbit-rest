@@ -51,8 +51,10 @@ class RestEntry
 
     public function getRuleQuery(Query $query): Query
     {
-        foreach ($this->rules->getRules($this->class::tableName()) as $condition) {
-            $query = $query->andWhere($condition);
+        if ($this->rules) {
+            foreach ($this->rules->getRules($this->class::tableName()) as $condition) {
+                $query = $query->andWhere($condition);
+            }
         }
         return $query;
     }

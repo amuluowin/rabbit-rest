@@ -27,7 +27,7 @@ abstract class ModelJson
         $data = new stdClass();
         $data->params = $request->getParsedBody() + $request->getQueryParams();
 
-        if ($this->modelMap[$model] ?? false) {
+        if (!($this->modelMap[$model] ?? false)) {
             throw new InvalidArgumentException("Model not exists!");
         }
         if (!in_array($method, $this->modelMap[$model]->getMethods())) {
@@ -57,7 +57,7 @@ abstract class ModelJson
         };
         if (in_array($method, RestEntry::SHARE_FUNC)) {
             $key = $method . ':' . md5(\igbinary_serialize($data->params));
-            $data = share($key, $func, $this->modelMap[$model]->getShareTimeout())->result;
+            $data = share($key, $func, $this->modelMap[$model]->getShareTimeout() ?? 3)->result;
         } else {
             $data = $func();
         }
