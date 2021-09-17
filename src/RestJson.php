@@ -50,9 +50,9 @@ abstract class RestJson extends ModelJson
                     $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method) {
                         $page = ArrayHelper::remove($filter, 'page');
                         if ($page !== null) {
-                            return DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                            return DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from($table), $filter, $page, $this->getDuration($request), $this->cache);
                         } else {
-                            return DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                            return DBHelper::Search(getDI('db')->get($key)->buildQuery()->from($table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
                         }
                     }, (int)$data->share)->result;
                 } else {
@@ -80,7 +80,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
+            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::create($model, $value);
             });
         }
@@ -99,7 +99,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
+            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::update($model, $value, true);
             });
         }
@@ -118,7 +118,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model::getDb()->transaction(function () use ($model, $value) {
+            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
                 return $this->ARClass::delete($model, $value);
             });
         }

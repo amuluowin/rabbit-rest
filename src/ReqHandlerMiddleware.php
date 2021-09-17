@@ -12,13 +12,9 @@ use Rabbit\HttpServer\Middleware\AcceptTrait;
 abstract class ReqHandlerMiddleware implements MiddlewareInterface
 {
     use AcceptTrait;
-    /** @var string */
+
     protected string $prefix = '';
 
-    /**
-     * ReqHandlerMiddleware constructor.
-     * @param string $prefix
-     */
     public function __construct(string $prefix = '')
     {
         $this->prefix = $prefix;

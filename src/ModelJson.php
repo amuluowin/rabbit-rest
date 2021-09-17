@@ -102,7 +102,7 @@ abstract class ModelJson
 
     protected function list(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): array
     {
-        return $entry->getRuleQuery(DBHelper::Search($entry->getClass()::find()->asArray()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->all();
+        return $entry->getRuleQuery(DBHelper::Search(create($entry->getClass()::class)->find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->all();
     }
 
     protected function index(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): array
@@ -111,7 +111,7 @@ abstract class ModelJson
         $limit = ArrayHelper::remove($data->params, 'limit', 20);
         $offset = ArrayHelper::remove($data->params, 'offset', ($page ? ($page - 1) : 0) * (int)$limit);
         $count = ArrayHelper::remove($data->params, 'count', '1');
-        $query = $entry->getRuleQuery(DBHelper::Search($entry->getClass()::find()->asArray()->alias($alias), $data->params));
+        $query = $entry->getRuleQuery(DBHelper::Search(create($entry->getClass())->find()->alias($alias), $data->params));
         $duration = $this->getDuration($request);
         $rows = $query->cache($duration, $this->cache)->limit($limit)->offset($offset)->all();
         if ($limit) {
@@ -135,19 +135,19 @@ abstract class ModelJson
         if (count($keys) > 1 && $id !== null) {
             $values = explode(',', $id);
             if (count($keys) === count($values)) {
-                return $entry->getRuleQuery(DBHelper::search($entry->getClass()::find()->asArray()->alias($alias), $data->params)->andWhere(array_combine($keys, $values)))->cache($this->getDuration($request), $this->cache)->one();
+                return $entry->getRuleQuery(DBHelper::search(create($entry->getClass())->find()->alias($alias), $data->params)->andWhere(array_combine($keys, $values)))->cache($this->getDuration($request), $this->cache)->one();
             }
         } elseif ($id !== null) {
-            return $entry->getRuleQuery(DBHelper::search($entry->getClass()::find()->asArray()->alias($alias), $data->params)->andWhere(array_combine($keys, [$id])))->cache($this->getDuration($request), $this->cache)->one();
+            return $entry->getRuleQuery(DBHelper::search(create($entry->getClass())->find()->alias($alias), $data->params)->andWhere(array_combine($keys, [$id])))->cache($this->getDuration($request), $this->cache)->one();
         } else {
-            return $entry->getRuleQuery(DBHelper::search($entry->getClass()::find()->asArray()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->one();
+            return $entry->getRuleQuery(DBHelper::search(create($entry->getClass())->find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->one();
         }
     }
 
     protected function search(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias)
     {
         $method = ArrayHelper::remove($data->params, 'method', 'all');
-        return $entry->getRuleQuery(DBHelper::search($entry->getClass()::find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->$method();
+        return $entry->getRuleQuery(DBHelper::search(create($entry->getClass())->find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->$method();
     }
 
     protected function buildFilter(stdClass $data, string $alias): void
