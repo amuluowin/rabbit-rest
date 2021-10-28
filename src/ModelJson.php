@@ -68,36 +68,28 @@ abstract class ModelJson
     {
         $class = $entry->getClass();
         $model = new $class();
-        return $model::getDb()->transaction(function () use ($model, $data) {
-            return $this->ARClass::create($model, $data->params);
-        });
+        return $this->ARClass::create($model, $data->params);
     }
 
     protected function save(stdClass $data, ServerRequestInterface $request, RestEntry $entry): array
     {
         $class = $entry->getClass();
         $model = new $class();
-        return $class::getDb()->transaction(function () use ($model, $data) {
-            return $this->ARClass::update($model, $data->params);
-        });
+        return $this->ARClass::update($model, $data->params);
     }
 
     protected function update(stdClass $data, ServerRequestInterface $request, RestEntry $entry): array
     {
         $class = $entry->getClass();
         $model = new $class();
-        return $class::getDb()->transaction(function () use ($model, $data) {
-            return $this->ARClass::update($model, $data->params, true);
-        });
+        return $this->ARClass::update($model, $data->params, true);
     }
 
     protected function del(stdClass $data, ServerRequestInterface $request, RestEntry $entry): int
     {
         $class = $entry->getClass();
         $model = new $class();
-        return $class::getDb()->transaction(function () use ($model, $data) {
-            return $this->ARClass::delete($model, $data->params);
-        });
+        return $this->ARClass::delete($model, $data->params);
     }
 
     protected function list(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): array

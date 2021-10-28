@@ -80,9 +80,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
-                return $this->ARClass::create($model, $value);
-            });
+            $result[$model] = $this->ARClass::create($model, $value);
         }
         return $result;
     }
@@ -99,9 +97,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
-                return $this->ARClass::update($model, $value, true);
-            });
+            $result[$model] = $this->ARClass::update($model, $value, true);
         }
         return $result;
     }
@@ -118,9 +114,7 @@ abstract class RestJson extends ModelJson
                 $key = 'default';
             }
             $model = $this->ARClass::getModel($model, $key);
-            $result[$model] = $model->getDb()->transaction(function () use ($model, $value) {
-                return $this->ARClass::delete($model, $value);
-            });
+            $result[$model] = $this->ARClass::delete($model, $value);
         }
         return $result;
     }
