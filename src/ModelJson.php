@@ -21,6 +21,8 @@ abstract class ModelJson
     protected ?string $queryKey = null;
     protected string $sceneKey = 'scene';
     public array $modelMap = [];
+    protected string $listKey = 'data';
+    protected string $totalKey = 'total';
 
     public function __invoke(ServerRequestInterface $request, string $method, string $model)
     {
@@ -94,7 +96,7 @@ abstract class ModelJson
 
     protected function list(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): array
     {
-        return $entry->getRuleQuery(DBHelper::Search(create($entry->getClass()::class)->find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->all();
+        return $entry->getRuleQuery(DBHelper::Search(create($entry->getClass())->find()->alias($alias), $data->params))->cache($this->getDuration($request), $this->cache)->all();
     }
 
     protected function index(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): array
@@ -113,8 +115,7 @@ abstract class ModelJson
         } else {
             $total = count($rows);
         }
-        return ['total' => $total, 'data' => $rows];
-        // return DBHelper::SearchList($entry->getClass()::find()->alias($alias), $data->params, $page, $this->getDuration($request), $this->cache);
+        return [$this->totalKey => $total, $this->listKey => $rows];
     }
 
     protected function view(stdClass $data, ServerRequestInterface $request, RestEntry $entry, string $alias): ?array
