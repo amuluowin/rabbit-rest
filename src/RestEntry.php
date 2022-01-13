@@ -11,10 +11,13 @@ class RestEntry
     const SHARE_FUNC = ['view', 'list', 'search', 'index'];
     protected string $class;
     protected array $methods = ['create', 'save', 'update', 'del', 'view', 'list', 'search', 'index', 'get', 'put', 'post', 'delete'];
+    protected array $exclude = [];
     protected bool $auth = true;
-    protected array $events = [];
+    protected ?BaseEvents $events = null;
     protected ?RulesInterface $rules = null;
     protected ?int $shareTimeout = null;
+    protected ?int $index = null;
+    protected ?string $name = null;
 
     public function __construct(array $columns, RulesInterface $rules = null)
     {
@@ -22,7 +25,12 @@ class RestEntry
         foreach ($columns as $name => $value) {
             $this->$name = $value;
         }
+        foreach ($this->exclude as $name) {
+            unset($this->methods[array_search($name, $this->methods)]);
+        }
     }
+
+
 
     public function getShareTimeout(): ?int
     {
@@ -44,11 +52,6 @@ class RestEntry
         return $this->auth;
     }
 
-    public function getEvents(): array
-    {
-        return $this->events;
-    }
-
     public function getRuleQuery(Query $query): Query
     {
         if ($this->rules) {
@@ -57,5 +60,20 @@ class RestEntry
             }
         }
         return $query;
+    }
+
+    public function getIndex(): ?int
+    {
+        return $this->index;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function getEvents(): ?BaseEvents
+    {
+        return $this->events;
     }
 }

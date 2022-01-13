@@ -19,7 +19,8 @@ abstract class ModelJson
     protected $cacheCallback;
     protected string $ARClass = ARHelper::class;
     protected ?string $queryKey = null;
-    protected string $sceneKey = 'scene';
+    protected string $beforeKey = 'before';
+    protected string $afterKey = 'after';
     public array $modelMap = [];
     protected string $listKey = 'data';
     protected string $totalKey = 'total';
@@ -37,23 +38,28 @@ abstract class ModelJson
         }
         $func = function () use ($model, $method, $data, $request) {
             ArrayHelper::toArrayJson($data->params);
-            [$before, $after] = ArrayHelper::getValueByArray($this->modelMap[$model]->getEvents(), ['before', 'after']);
+
+            $before = $this->modelMap[$model]->getEvents()?->getBefore();
+            $beforeScene = ArrayHelper::remove($data->params, $this->beforeKey);
             if ($before && isset($before[$method]) && is_callable($before[$method])) {
                 $before[$method]($data, $request);
             }
+            if ($before && isset($before[$beforeScene]) && is_callable($before[$beforeScene])) {
+                $before[$beforeScene]($data, $request);
+            }
+            
             if (in_array($method, ['list', 'index', 'view', 'search'])) {
-                if ($before && isset($before['filter']) && is_callable($before['filter'])) {
-                    $before['filter']($data, $request);
-                }
                 $this->buildFilter($data, $model);
-                if ($after && isset($after['filter']) && is_callable($after['filter'])) {
-                    $after['filter']($data, $request);
-                }
             }
 
+            $after = $this->modelMap[$model]->getEvents()?->getAfter();
+            $afterScene = ArrayHelper::remove($data->params, $this->afterKey);
             $data->result = $this->$method($data, $request, $this->modelMap[$model], $model);
             if ($after && isset($after[$method]) && is_callable($after[$method])) {
                 $after[$method]($data, $request);
+            }
+            if ($after && isset($after[$afterScene]) && is_callable($after[$afterScene])) {
+                $after[$afterScene]($data, $request);
             }
             return $data;
         };
