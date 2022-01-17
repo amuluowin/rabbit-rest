@@ -13,10 +13,7 @@ abstract class ReqHandlerMiddleware implements MiddlewareInterface
 {
     use AcceptTrait;
 
-    protected string $prefix = '';
-
-    public function __construct(string $prefix = '')
+    public function __construct(protected string $prefix = '')
     {
-        $this->prefix = $prefix;
     }
 }
