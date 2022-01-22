@@ -64,7 +64,7 @@ abstract class ModelJson
             return $data;
         };
         if (in_array($method, RestEntry::SHARE_FUNC)) {
-            $key = $method . ':' . md5(\igbinary_serialize($data->params));
+            $key = $method . ':' . md5(\msgpack_pack($data->params));
             $data = share($key, $func, $this->modelMap[$model]->getShareTimeout() ?? 3)->result;
         } else {
             $data = $func();

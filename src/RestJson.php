@@ -46,7 +46,7 @@ abstract class RestJson extends ModelJson
                 }
                 ArrayHelper::remove($filter, 'from');
                 if (is_numeric($data->share) && (int)$data->share > 0) {
-                    $name = "$config:$table:" . md5(\igbinary_serialize($filter));
+                    $name = "$config:$table:" . md5(\msgpack_pack($filter));
                     $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method) {
                         $page = ArrayHelper::remove($filter, 'page');
                         if ($page !== null) {
