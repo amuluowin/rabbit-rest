@@ -36,7 +36,7 @@ abstract class ModelJson
         if (!in_array($method, $this->modelMap[$model]->getMethods())) {
             throw new NotFoundHttpException("The route type error:" . $request->getUri()->getPath());
         }
-        $func = function () use ($model, $method, $data, $request) {
+        $func = function () use ($model, $method, $data, $request): mixed {
             ArrayHelper::toArrayJson($data->params);
 
             $before = $this->modelMap[$model]->getEvents()?->getBefore();
@@ -47,7 +47,7 @@ abstract class ModelJson
             if ($before && isset($before[$beforeScene]) && is_callable($before[$beforeScene])) {
                 $before[$beforeScene]($data, $request);
             }
-            
+
             if (in_array($method, ['list', 'index', 'view', 'search'])) {
                 $this->buildFilter($data, $model);
             }

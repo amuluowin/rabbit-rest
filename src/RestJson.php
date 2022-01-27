@@ -29,7 +29,7 @@ abstract class RestJson extends ModelJson
     {
         $result = [];
         ArrayHelper::toArrayJson($data->params);
-        wgeach($data->params, function (string $config, array $value) use ($request, &$result, $data) {
+        wgeach($data->params, function (string $config, array $value) use ($request, &$result, $data): void {
             $arr = explode(':', $config);
             if (count($arr) === 2) {
                 [$key, $method] = $arr;
@@ -37,7 +37,7 @@ abstract class RestJson extends ModelJson
                 [$method] = $arr;
                 $key = 'default';
             }
-            wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request, $data) {
+            wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request, $data): void {
                 $tableArr = explode(':', $table);
                 $table = array_shift($tableArr);
                 $alias = array_shift($tableArr);
@@ -47,7 +47,7 @@ abstract class RestJson extends ModelJson
                 ArrayHelper::remove($filter, 'from');
                 if (is_numeric($data->share) && (int)$data->share > 0) {
                     $name = "$config:$table:" . md5(\msgpack_pack($filter));
-                    $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method) {
+                    $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method): mixed {
                         $page = ArrayHelper::remove($filter, 'page');
                         if ($page !== null) {
                             return DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from($table), $filter, $page, $this->getDuration($request), $this->cache);
