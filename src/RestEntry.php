@@ -21,7 +21,7 @@ class RestEntry
 
     public function __construct(array $columns, RulesInterface $rules = null)
     {
-        $this->rules = $rules ?? getDI('rules', false);
+        $this->rules = $rules ?? service('rules', false);
         foreach ($columns as $name => $value) {
             $this->$name = $value;
         }

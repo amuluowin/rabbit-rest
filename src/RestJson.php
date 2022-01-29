@@ -50,17 +50,17 @@ abstract class RestJson extends ModelJson
                     $result["$config:$table"] = share($name, function () use ($key, $table, $filter, $request, $method): mixed {
                         $page = ArrayHelper::remove($filter, 'page');
                         if ($page !== null) {
-                            return DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from($table), $filter, $page, $this->getDuration($request), $this->cache);
+                            return DBHelper::SearchList(service('db')->get($key)->buildQuery()->from($table), $filter, $page, $this->getDuration($request), $this->cache);
                         } else {
-                            return DBHelper::Search(getDI('db')->get($key)->buildQuery()->from($table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                            return DBHelper::Search(service('db')->get($key)->buildQuery()->from($table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
                         }
                     }, (int)$data->share)->result;
                 } else {
                     $page = ArrayHelper::remove($filter, 'page');
                     if ($page !== null) {
-                        $result["$config:$table"] = DBHelper::SearchList(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
+                        $result["$config:$table"] = DBHelper::SearchList(service('db')->get($key)->buildQuery()->from((array)$table), $filter, $page, $this->getDuration($request), $this->cache);
                     } else {
-                        $result["$config:$table"] = DBHelper::Search(getDI('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
+                        $result["$config:$table"] = DBHelper::Search(service('db')->get($key)->buildQuery()->from((array)$table), $filter)->cache($this->getDuration($request), $this->cache)->$method();
                     }
                 }
             });
