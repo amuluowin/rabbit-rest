@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rabbit\Rest;
 
+use Closure;
 use Rabbit\Base\Exception\InvalidArgumentException;
 use Rabbit\DB\DBHelper;
 use Rabbit\ActiveRecord\ARHelper;
@@ -16,7 +17,7 @@ use stdClass;
 abstract class ModelJson
 {
     protected ?CacheInterface $cache = null;
-    protected $cacheCallback;
+    protected Closure $cacheCallback;
     protected string $ARClass = ARHelper::class;
     protected ?string $queryKey = null;
     protected string $beforeKey = 'before';
