@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rabbit\Rest;
 
 use Psr\Http\Message\ServerRequestInterface;
+use Rabbit\ActiveRecord\BaseRecord;
 use Rabbit\Base\Helper\ArrayHelper;
 use Rabbit\DB\DBHelper;
 use stdClass;
@@ -35,7 +36,7 @@ abstract class RestJson extends ModelJson
                 [$key, $method] = $arr;
             } else {
                 [$method] = $arr;
-                $key = 'default';
+                $key = $this->ARClass::DEFAULT_DB;
             }
             wgeach($value, function (string $table, array $filter) use (&$result, $config, $key, $method, $request, $data): void {
                 $tableArr = explode(':', $table);
@@ -77,9 +78,9 @@ abstract class RestJson extends ModelJson
                 [$key, $model] = $arr;
             } else {
                 [$model] = $arr;
-                $key = 'default';
+                $key = $this->ARClass::DEFAULT_DB;
             }
-            $model = $this->ARClass::getModel($model, $key);
+            $model = BaseRecord::build($model, $key);
             $result[$model] = $this->ARClass::create($model, $value);
         }
         return $result;
@@ -94,9 +95,9 @@ abstract class RestJson extends ModelJson
                 [$key, $model] = $arr;
             } else {
                 [$model] = $arr;
-                $key = 'default';
+                $key = $this->ARClass::DEFAULT_DB;
             }
-            $model = $this->ARClass::getModel($model, $key);
+            $model = BaseRecord::build($model, $key);
             $result[$model] = $this->ARClass::update($model, $value, true);
         }
         return $result;
@@ -111,9 +112,9 @@ abstract class RestJson extends ModelJson
                 [$key, $model] = $arr;
             } else {
                 [$model] = $arr;
-                $key = 'default';
+                $key = $this->ARClass::DEFAULT_DB;
             }
-            $model = $this->ARClass::getModel($model, $key);
+            $model = BaseRecord::build($model, $key);
             $result[$model] = $this->ARClass::delete($model, $value);
         }
         return $result;
